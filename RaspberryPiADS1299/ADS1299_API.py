@@ -224,7 +224,7 @@ class ADS1299_API(object):
         else:
 
             # setup fake data generator
-            print "stubbed mode"
+            print("stubbed mode")
             APIAlive = True
             self.stubThread = Thread(target=self.stubTask)
             self.stubThread.start()
@@ -365,7 +365,7 @@ class ADS1299_API(object):
         # (0) SRB2 open
         # (000) Normal operations
         tx_buf = [0] * self.nb_channels
-        for i in xrange(0, self.nb_channels):
+        for i in range(0, self.nb_channels):
             tx_buf[i] = 0x60;
         self.SPI_writeMultipleReg(REG_CHnSET_BASE, tx_buf);
 
@@ -397,7 +397,7 @@ class ADS1299_API(object):
 
         # Write CHnSET 05h (connects test signal)
         tx_buf = [0] * self.nb_channels
-        for i in xrange(0, self.nb_channels):
+        for i in range(0, self.nb_channels):
             tx_buf[i] = 0x65
         self.SPI_writeMultipleReg(REG_CHnSET_BASE, tx_buf)
 
@@ -425,7 +425,7 @@ class ADS1299_API(object):
 
         # setup CHnSET registers
         tx_buf = [0] * MAX_NB_CHANNELS
-        for i in xrange(0, MAX_NB_CHANNELS):
+        for i in range(0, MAX_NB_CHANNELS):
             # input shorted
             tx_buf[i] = 0x01
         self.SPI_writeMultipleReg(REG_CHnSET_BASE, tx_buf)
@@ -462,7 +462,7 @@ class ADS1299_API(object):
         if self.bias_enabled:
 
             temp_reg_value = 0x00
-            for i in xrange(0, self.nb_channels):
+            for i in range(0, self.nb_channels):
                 temp_reg_value |= 0x01 << i
             self.SPI_writeSingleReg(REG_BIAS_SENSP, temp_reg_value)
             self.SPI_writeSingleReg(REG_BIAS_SENSN, temp_reg_value)
@@ -503,7 +503,7 @@ class ADS1299_API(object):
             return
 
         data_array = np.zeros(self.nb_channels)
-        for i in xrange(0, self.nb_channels):
+        for i in range(0, self.nb_channels):
             data_array[i] = conv24bitsToFloat(bit_values[(i * 3 + 3):((i + 1) * 3 + 3)])
 
         # broadcast results
@@ -606,7 +606,7 @@ class ADS1299_API(object):
         if STUB_SPI == False:
             tmp = [start_reg | 0x40]
             tmp.append(len(byte_array) - 1)
-            for i in xrange(0, len(byte_array)):
+            for i in range(0, len(byte_array)):
                 tmp.append(byte_array[i])
             self.spi_lock.acquire()
             self.spi.xfer2(tmp)
@@ -626,14 +626,14 @@ class ADS1299_API(object):
             self.spi_lock.acquire()
             r = self.spi.xfer2([0x00] * nb_bytes)
             self.spi_lock.release()
-            for i in xrange(0, nb_bytes):
+            for i in range(0, nb_bytes):
                 r[i]
 
         return r
 
 
 def _test():
-    print "Starting validation sequence"
+    print("Starting validation sequence")
 
     # init ads api
     ads = ADS1299_API()
@@ -645,7 +645,7 @@ def _test():
     # configure ads
     ads.configure(sampling_rate=1000)
 
-    print "ADS1299 API test stream starting"
+    print("ADS1299 API test stream starting")
 
     # begin test streaming
     ads.startEegStream()
@@ -653,7 +653,7 @@ def _test():
     # wait
     sleep(10)
 
-    print "ADS1299 API test stream stopping"
+    print("ADS1299 API test stream stopping")
 
     # stop device
     ads.stopStream()
@@ -661,7 +661,7 @@ def _test():
     ads.closeDevice()
 
     sleep(1)
-    print "Test Over"
+    print("Test Over")
 
 
 if __name__ == "__main__":
