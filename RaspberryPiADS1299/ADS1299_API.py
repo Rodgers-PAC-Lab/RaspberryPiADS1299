@@ -202,6 +202,7 @@ class ADS1299_API(object):
 
     def openDevice(self):
 
+        print("you got into opendevice()")
         if STUB_SPI == False and STUB_GPIO == False:
 
             # open and configure SPI port
@@ -220,6 +221,7 @@ class ADS1299_API(object):
             # setup DRDY callback
             GPIO.setup(DRDY_PIN, GPIO.IN)
             GPIO.add_event_detect(DRDY_PIN, GPIO.FALLING, callback=self.drdy_callback)
+            #GPIO.add_event_detect(DRDY_PIN, GPIO.FALLING)
 
         else:
 
@@ -637,7 +639,7 @@ def _test():
 
     # init ads api
     ads = ADS1299_API()
-
+    print("You go into _test_")
     # init device
     ads.openDevice()
     # attach default callback
