@@ -1,7 +1,8 @@
 import spidev
 import RPi.GPIO as GPIO
-#import RaspberryPiADS1299
 import time
+import datetime
+import numpy as np
 import pandas
 from threading import Semaphore, Lock, Thread
 
@@ -68,7 +69,8 @@ def WREG(Reg_address, value):
 def Testsignal_setup():
     spi.xfer2([0x11])
     spi.xfer2([0x11])
-    WREG(0x01,int(0x94))    # Set CONFIG1 w sample speed
+    #WREG(0x01,int(0x94))    # Set CONFIG1 w sample speed
+    WREG(0x01, int(0x92))  # Set CONFIG1 w sample speed
     WREG(0x03,int(0xE0))  # Set CONFIG3 to use internal reference
     WREG(0x02, int(0xD0))  # Set CONFIG2 for internal test
     chregs = [0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C]
@@ -250,12 +252,59 @@ def read_on_DRDY(n_samples, speed=16000000):
        timer = end_time - start_time
        print("It took ", timer, " seconds")
    return res_l, bytes_l,timer
+def parse_resl(results):
+    parsedres_l = []
+    for n_result in range(0,len(results)):
+        sample_l = []
+        sbytes_l = []
+        single = results[n_result]
+        for channel in range(1, 9):
+            sample_byt = []
+            # Slice out the 3 bytes corresponding to this channel
+            sample_byt = single[channel * 3:(channel + 1) * 3]
+
+            # Convert that sample to int
+            sample_int = int.from_bytes(sample_byt, 'big', signed=True)
+
+            # Store
+            sample_l.append(sample_int)
+            sbytes_l.append(sample_byt)
+        parsedres_l.append(sample_l)
+    return parsedres_l
+
+
+
 powerup()
 startup()
 Testsignal_setup()
 spi.xfer2([0x08])
 spi.xfer2([0x10])
 
-# [resl,bytesl,timer]=speedlimit_RDATAC(100,4000000)
-# [CS_resl,CS_bytesl,CS_timer]=CStoggled_RDATAC(100,4000000)
-#GPIO.cleanup()
+
+speed = 16000000
+results_l = []
+tresults_l = []
+
+def callback(channel):
+    GPIO.output(CS_FAKE, GPIO.LOW)
+    results = spi.xfer2(([0x00] * 27), speed)
+    GPIO.output(CS_FAKE, GPIO.HIGH)
+
+    results_l.append(results)
+    tresults_l.append(datetime.datetime.now())
+
+GPIO.add_event_detect(DRDY_PIN, GPIO.FALLING, callback=callback)
+time.sleep(1)
+GPIO.remove_event_detect(DRDY_PIN)
+
+time.sleep(1)
+tresults_arr = np.array(tresults_l)
+tresults_arr = np.array(list(map(lambda x: x.total_seconds(), tresults_arr - tresults_arr[0])))
+diffs=np.diff(tresults_arr)
+meant=np.mean(diffs)
+stds= np.std(diffs)
+spi.xfer2([0x11])
+spi.xfer2([0x11])
+spi.xfer2([0x0A])
+closeout()
+print(len(results_l),'samples collected ', meant*1000,'ms apart, with a std dev of ',stds*1000, 'ms')
