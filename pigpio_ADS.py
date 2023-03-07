@@ -1,7 +1,9 @@
 import time
 import pigpio
 import os
-
+import numpy as np
+import time
+import datetime
 
 #os.system('sudo killall pigpiod')
 #os.system('sudo pigpiod -t 0 -x 1111110000111111111111110000')
@@ -82,6 +84,34 @@ def Testsignal_setup():
       read.append(check)  # Add that read value to a list
       time.sleep(0.001)
     return read
+def DRDY_Callback(gpio,level,tick):
+    pi.write(CS,0)
+    results = pi.spi_xfer(h,([0x00] * 27))
+    pi.write(CS,1)
+    #results_l.append(0)
+    results_l.append(results[1].hex())
+    tresults_l.append(datetime.datetime.now())
+# print(tick)
 
 powerup()
 startup()
+pi.spi_xfer(h,[0x08])
+pi.spi_xfer(h,[0x10])
+results_l = []
+tresults_l = []
+
+listen = pi.callback(DRDY_PIN,pigpio.FALLING_EDGE,DRDY_Callback)
+time.sleep(1)
+#listen.cancel()
+
+time.sleep(1)
+#tresults_arr = np.array(tresults_l)
+#tresults_arr = np.array(list(map(lambda x: x.total_seconds(), tresults_arr - tresults_arr[0])))
+#diffs=np.diff(tresults_arr)
+#meant=np.mean(diffs)
+# stds= np.std(diffs)
+pi.spi_xfer(h,[0x11])
+pi.spi_xfer(h,[0x11])
+pi.spi_xfer(h,[0x0A])
+
+#print(len(results_l),'samples collected ', meant*1000,'ms apart, with a std dev of ',stds*1000, 'ms')
