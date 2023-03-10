@@ -196,10 +196,10 @@ def callback(channel):
     GPIO.output(CS_FAKE, GPIO.LOW)
     results = spi.xfer2(([0x00] * 27), speed)
     GPIO.output(CS_FAKE, GPIO.HIGH)
-
-    results_l.append(results)
-    tresults_l.append(datetime.datetime.now())
-
+    q.put_nowait(results)
+    # results_l.append(results)
+    # tresults_l.append(datetime.datetime.now())
+q=queue.Queue()
 
 powerup()
 startup()
@@ -211,8 +211,39 @@ speed = 16000000
 results_l = []
 tresults_l = []
 
+
+def data_write():
+    go = True
+    while go == True:
+        counter=0
+        if q.qsize() > 10:
+            data_to_write = []
+            while True:
+                try:
+                    data = q.get_nowait()
+                except queue.Empty:
+                    break
+
+                data_to_write.append(data)
+            print('writing to disk')
+            concatted = np.concatenate(data_to_write)
+            np.save('concatted', concatted)
+        else:
+            if counter < 5 :
+                time.sleep(0.1)
+                counter =+ 1
+            elif counter < 8:
+                time.sleep(10)
+                counter = + 1
+            else:
+                go = False
+                break
+    return concatted
+    # print('queue is too short')
+threading.Thread(target=data_write).start()
+
 GPIO.add_event_detect(DRDY_PIN, GPIO.FALLING, callback=callback)
-time.sleep(1)
+time.sleep(0.1)
 GPIO.remove_event_detect(DRDY_PIN)
 
 time.sleep(1)
@@ -224,5 +255,7 @@ stds= np.std(diffs)
 spi.xfer2([0x11])
 spi.xfer2([0x11])
 spi.xfer2([0x0A])
+print(len(results_l), 'samples collected ', round(meant * 1000,5),
+      'ms apart, with a std dev of ', round(stds * 1000,5), 'ms. Sample speed was',
+      getSPS(speeds))
 closeout()
-print(len(results_l),'samples collected ', meant*1000,'ms apart, with a std dev of ',stds*1000, 'ms')

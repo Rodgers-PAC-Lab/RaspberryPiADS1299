@@ -15,7 +15,7 @@ nPWRDN_PIN = 24 #Physical pin 18
 DRDY_PIN = 25   #Physical pin 22
 CS = 8    #Physical pin 24
 
-pi = pigpio.pi(host='192.168.11.222')
+pi = pigpio.pi()
 print ("I'm in")
 h = pi.spi_open(0,16000000,1)
 #slowh =pi.spi_open(0,4000000,1)
@@ -108,8 +108,8 @@ time.sleep(1)
 #tresults_arr = np.array(tresults_l)
 #tresults_arr = np.array(list(map(lambda x: x.total_seconds(), tresults_arr - tresults_arr[0])))
 #diffs=np.diff(tresults_arr)
-#meant=np.mean(diffs)
-# stds= np.std(diffs)
+meant=np.mean(diffs)
+stds= np.std(diffs)
 pi.spi_xfer(h,[0x11])
 pi.spi_xfer(h,[0x11])
 pi.spi_xfer(h,[0x0A])
