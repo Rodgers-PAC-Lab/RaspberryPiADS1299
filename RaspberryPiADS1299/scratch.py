@@ -8,4 +8,14 @@ parsed = [
     [-4521, -4732, -4521, -4740, -4697, -4595, -4535, -4524]
 ]
 plt.plot(parsed)
-plt.show()
+# plt.show()
+
+speeds = {
+        '0x90': '16k SPS = every 0.0000625 seconds',
+        '0x91': '8k SPS = every 0.000125 seconds',
+        '0x92': '4k SPS = every 0.00025 seconds',
+        '0x93': '2k SPS = every 0.0005 seconds',
+        '0x94': '1k SPS = every 0.001 seconds',
+        '0x95': '500 SPS = every 0.002 seconds',
+        '0x96': '250 SPS = every 0.004 seconds'
+        }

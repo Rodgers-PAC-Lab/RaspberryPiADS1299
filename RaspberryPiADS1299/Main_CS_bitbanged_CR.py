@@ -4,7 +4,8 @@ import time
 import datetime
 import numpy as np
 import pandas
-from threading import Semaphore, Lock, Thread
+import threading
+import queue
 
 
 #""" ADS1299 PINS """
