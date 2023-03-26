@@ -222,9 +222,13 @@ q = queue.Queue(maxsize=20000)
 print("listening")
 GPIO.add_event_detect(DRDY_PIN, GPIO.FALLING, callback=acquire_data)
 
-# Keep doing this until the user presses CTRL+C
+# If a file called 'stop' exists in this directory, remove it
+if os.path.exists('stop'):
+    os.remove('stop')
+
+# Keep doing this until a file called 'stop' is created in this directory
 try:
-    while True:
+    while not os.path.exists('stop'):
         # Check if the queue is long enough to write to disk
         #print("got into while True")
         if q.qsize() > 4000:
@@ -265,13 +269,17 @@ try:
         # frequently
         time.sleep(.1)
 
-except KeyboardInterrupt:
-    print("interrupt received, stopping")
+except:
+    raise
 
 finally:
     # Stop the timer from adding more data to the queue
     # Replace this with a cancellation of the pigpio callback
     GPIO.remove_event_detect(DRDY_PIN)
+
+# If a file called 'stop' exists in this directory, remove it
+if os.path.exists('stop'):
+    os.remove('stop')
 
 # Extract the time of the sample reads
 sample_read_times_arr = np.array(sample_read_times)
