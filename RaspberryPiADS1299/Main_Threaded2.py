@@ -36,7 +36,7 @@ GPIO.setup(CS_FAKE,GPIO.OUT, initial = GPIO.LOW)
 
 spi = spidev.SpiDev()
 spi.open(0,0)
-spi.max_speed_hz = 19000000
+spi.max_speed_hz = 22000000
 #spi.max_speed_hz = 4000000
 spi.mode = 0b01
 spi.no_cs = True
@@ -102,106 +102,12 @@ def Testsignal_setup():
 def closeout():
     spi.close()
     GPIO.cleanup()
-def CStoggled_RDATAC(n_samples=10,speed=16000000):
-    """Return n_samples of data from 8 channels
 
-    Returns a list of lists. The length of the main list is n_samples,
-    and the length of each sub-list is 8 channels.
-    """
-    # This is where results will be stored
-    res_l = []
-    bytes_l = []
-    start_time = time.time()
-    # Iterate over the number of samples requested
-    for n_sample in range(n_samples):
-        # Capture 27 bytes -- 8 channels, 1 sample, plus a header
-        #    s.sel()
-        GPIO.output(CS_FAKE, GPIO.LOW)
-        results = spi.xfer2(([0x00] * 27),speed)
-        GPIO.output(CS_FAKE, GPIO.HIGH)
-        print(time.time() - start_time)
-
-        # Iterate over channels, skipping the first "channel" which is c0000c
-        sample_l = []
-        sbytes_l = []
-        for channel in range(1, 9):
-            # Slice out the 3 bytes corresponding to this channel
-            sample_byt = results[channel * 3:(channel + 1) * 3]
-
-            # Convert that sample to int
-            sample_int = int.from_bytes(sample_byt, 'big', signed=True)
-
-            # Store
-            sample_l.append(sample_int)
-            sbytes_l.append(sample_byt)
-        res_l.append(sample_l)
-        bytes_l.append(sbytes_l)
-    GPIO.output(CS_FAKE, GPIO.LOW)
-    end_time = time.time()
-    timer = end_time - start_time
-    print("It took ", timer, " seconds")
-    return res_l, bytes_l,timer
 def getSPS(speeds):
     regbyte=RREG(1)
     SPS = speeds[regbyte]
     return SPS
 
-def read_on_DRDY(n_samples, speed=16000000):
-   res_l = []
-   bytes_l = []
-   start_time = time.time()
-   for n_sample in range(n_samples):
-       # Wait for DRDY or timeout after 5 s
-       channel = GPIO.wait_for_edge(DRDY_PIN, GPIO.RISING, timeout=5000)
-       if channel is None:
-           print('Timeout occured')
-       else:
-           # Iterate over the number of samples requested
-           # Capture 27 bytes -- 8 channels, 1 sample, plus a header
-           GPIO.output(CS_FAKE, GPIO.LOW)
-           results = spi.xfer2(([0x00] * 27),speed)
-           GPIO.output(CS_FAKE, GPIO.HIGH)
-           print(time.time() - start_time)
-
-           # Iterate over channels, skipping the first "channel" which is c0000c
-           sample_l = []
-           sbytes_l = []
-           for channel in range(1, 9):
-               # Slice out the 3 bytes corresponding to this channel
-               sample_byt = results[channel * 3:(channel + 1) * 3]
-
-               # Convert that sample to int
-               sample_int = int.from_bytes(sample_byt, 'big', signed=True)
-
-               # Store
-               sample_l.append(sample_int)
-               sbytes_l.append(sample_byt)
-       res_l.append(sample_l)
-       bytes_l.append(sbytes_l)
-       GPIO.output(CS_FAKE, GPIO.LOW)
-       end_time = time.time()
-       timer = end_time - start_time
-       print("It took ", timer, " seconds")
-   return res_l, bytes_l,timer
-def parse_resl(results):
-    parsedres_l = []
-    for n_result in range(0,len(results)):
-        sample_l = []
-        sbytes_l = []
-        single = results[n_result]
-        for channel in range(1, 9):
-            sample_byt = []
-            # Slice out the 3 bytes corresponding to this channel
-            sample_byt = single[channel * 3:(channel + 1) * 3]
-
-            # Convert that sample to int
-            sample_int = int.from_bytes(sample_byt, 'big', signed=True)
-
-            # Store
-            sample_l.append(sample_int)
-            sbytes_l.append(sample_byt)
-        parsedres_l.append(sample_l)
-    return parsedres_l
 def acquire_data(listened_pin):
     GPIO.output(CS_FAKE, GPIO.LOW)
     results = spi.xfer2(([0x00] * 27))
@@ -221,10 +127,11 @@ sample_read_times = []
 q = queue.Queue(maxsize=20000)
 print("listening")
 GPIO.add_event_detect(DRDY_PIN, GPIO.FALLING, callback=acquire_data)
-
+#interrupt = input("")
 # Keep doing this until the user presses CTRL+C
+i = 0
 try:
-    while True:
+    while i < 20:
         # Check if the queue is long enough to write to disk
         #print("got into while True")
         if q.qsize() > 4000:
@@ -246,8 +153,6 @@ try:
                 data_to_write, dtype=np.uint8, casting='unsafe')
 
             # Write the concatenated/interpreted data to disk
-            # TODO: instead of always using the same filename, we
-            # would use a dated filename
             #print('writing to disk')
 
             # Generate a filename
@@ -263,11 +168,11 @@ try:
 
         # This sleep just keeps this while-loop from running too
         # frequently
+        i += 1
         time.sleep(.1)
 
-except KeyboardInterrupt:
-    print("interrupt received, stopping")
-
+# except KeyboardInterrupt:
+#     print("interrupt received, stopping")
 finally:
     # Stop the timer from adding more data to the queue
     # Replace this with a cancellation of the pigpio callback
@@ -286,8 +191,6 @@ spi.xfer2([0x11])
 spi.xfer2([0x11])
 spi.xfer2([0x0A])
 
-print(getSPS(speeds))
-# print(len(results_l), 'samples collected ', round(meant * 1000,5),
-#       'ms apart, with a std dev of ', round(stds * 1000,5), 'ms. Sample speed was',
-#       getSPS(speeds))
+print('Sample speed was ', getSPS(speeds))
+
 closeout()
